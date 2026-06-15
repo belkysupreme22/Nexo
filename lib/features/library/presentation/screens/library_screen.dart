@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/preferences/app_preferences_providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_icons.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -20,6 +21,15 @@ enum LibraryTab {
   const LibraryTab(this.label);
 
   final String label;
+
+  String get storageValue => name;
+
+  static LibraryTab fromStorageValue(String value) {
+    return LibraryTab.values.firstWhere(
+      (tab) => tab.storageValue == value,
+      orElse: () => LibraryTab.songs,
+    );
+  }
 }
 
 class LibraryScreen extends ConsumerStatefulWidget {
@@ -31,6 +41,22 @@ class LibraryScreen extends ConsumerStatefulWidget {
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   LibraryTab _selectedTab = LibraryTab.songs;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      final preferences = await ref.read(appPreferencesProvider.future);
+      final storedTab = preferences.readPreferredLibraryTab();
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _selectedTab = LibraryTab.fromStorageValue(storedTab);
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,8 +94,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                             child: ChoiceChip(
                               label: Text(tab.label),
                               selected: isSelected,
-                              onSelected: (_) =>
-                                  setState(() => _selectedTab = tab),
+                              onSelected: (_) => _selectTab(tab),
                               labelStyle: Theme.of(context).textTheme.labelLarge
                                   ?.copyWith(
                                     color: isSelected
@@ -250,5 +275,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           },
         );
     }
+  }
+
+  Future<void> _selectTab(LibraryTab tab) async {
+    setState(() {
+      _selectedTab = tab;
+    });
+
+    final preferences = await ref.read(appPreferencesProvider.future);
+    await preferences.savePreferredLibraryTab(tab.storageValue);
   }
 }

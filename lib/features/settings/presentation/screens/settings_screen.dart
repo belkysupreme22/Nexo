@@ -1,14 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/bootstrap/app_bootstrap.dart';
+import '../../../../core/config/app_environment.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bootstrapState = ref.watch(appBootstrapProvider).valueOrNull;
+    final backendMode =
+        bootstrapState?.backendMode == NexoBackendMode.supabaseConnected
+        ? 'Supabase connected'
+        : 'Local only';
+    final flavor = bootstrapState?.environment.appFlavor ?? 'development';
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -24,6 +34,12 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             _SettingCard(
+              title: 'Runtime environment',
+              description:
+                  'Flavor: $flavor. Backend mode: $backendMode. This is now driven by bootstrap configuration instead of screen-level assumptions.',
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _SettingCard(
               title: 'Playback platform bridge',
               description:
                   'Flutter owns the experience. Media3, ExoPlayer, notifications, and background playback stay on the Kotlin side next.',
@@ -34,6 +50,18 @@ class SettingsScreen extends StatelessWidget {
               description:
                   'Drift and Supabase are staged at the dependency level so the local-first data layer can land in the next phase work.',
             ),
+            if (bootstrapState != null &&
+                bootstrapState.warnings.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.md),
+              for (final warning in bootstrapState.warnings)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: _SettingCard(
+                    title: 'Bootstrap note',
+                    description: warning,
+                  ),
+                ),
+            ],
           ],
         ),
       ),

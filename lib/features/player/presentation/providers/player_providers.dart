@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../library/data/repositories/fake_library_repository.dart';
 import '../../../library/domain/entities/song.dart';
 import '../../../library/presentation/providers/library_providers.dart';
 import '../../domain/entities/player_queue_state.dart';
@@ -66,9 +65,6 @@ class PlayerController extends StateNotifier<PlayerQueueState> {
 
 final playerControllerProvider =
     StateNotifierProvider<PlayerController, PlayerQueueState>((ref) {
-      final repository = ref.watch(libraryRepositoryProvider);
-      final queue = repository is FakeLibraryRepository
-          ? repository.seedSongs
-          : <Song>[];
+      final queue = ref.watch(demoLibrarySeedCatalogProvider).songs;
       return PlayerController(queue);
     });

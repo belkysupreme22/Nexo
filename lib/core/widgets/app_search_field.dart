@@ -8,11 +8,13 @@ class AppSearchField extends StatelessWidget {
     super.key,
     required this.controller,
     required this.onChanged,
+    this.onSubmitted,
     this.hintText = 'Search your library',
   });
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
+  final ValueChanged<String>? onSubmitted;
   final String hintText;
 
   @override
@@ -20,6 +22,7 @@ class AppSearchField extends StatelessWidget {
     return TextField(
       controller: controller,
       onChanged: onChanged,
+      onSubmitted: onSubmitted,
       style: Theme.of(context).textTheme.bodyMedium,
       decoration: InputDecoration(
         hintText: hintText,

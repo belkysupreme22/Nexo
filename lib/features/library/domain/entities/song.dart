@@ -1,5 +1,4 @@
 import '../../../../core/media/media_item.dart';
-import '../../../../core/media/media_source.dart';
 
 class Song extends MediaItem {
   const Song({

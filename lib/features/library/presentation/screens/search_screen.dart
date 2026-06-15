@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_search_field.dart';
 import '../providers/library_providers.dart';
+import '../providers/recent_searches_controller.dart';
 import '../widgets/song_list_tile.dart';
 import '../../../player/presentation/providers/player_providers.dart';
 
@@ -33,7 +34,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final overviewAsync = ref.watch(libraryOverviewProvider);
+    final recentSearchesAsync = ref.watch(recentSearchesControllerProvider);
     final searchResultsAsync = ref.watch(songSearchResultsProvider);
 
     return SafeArea(
@@ -48,6 +49,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               controller: _controller,
               onChanged: (value) =>
                   ref.read(searchQueryProvider.notifier).state = value,
+              onSubmitted: (_) => _rememberCurrentQuery(),
               hintText: 'Artists, songs, albums',
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -56,26 +58,41 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 data: (songs) {
                   final query = ref.watch(searchQueryProvider);
                   if (query.isEmpty) {
-                    return overviewAsync.when(
-                      data: (overview) => ListView(
+                    return recentSearchesAsync.when(
+                      data: (recentSearches) => ListView(
                         children: [
                           Text(
                             'Recent Searches',
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                           const SizedBox(height: AppSpacing.md),
-                          ...overview.recentSearches.map(
+                          ...recentSearches.map(
                             (term) => ListTile(
                               contentPadding: EdgeInsets.zero,
-                              title: Text(term),
-                              trailing: const Icon(
-                                Icons.close_rounded,
-                                color: AppColors.textMuted,
+                              title: Text(term.value),
+                              trailing: IconButton(
+                                onPressed: () {
+                                  ref
+                                      .read(
+                                        recentSearchesControllerProvider
+                                            .notifier,
+                                      )
+                                      .remove(term.value);
+                                },
+                                icon: const Icon(
+                                  Icons.close_rounded,
+                                  color: AppColors.textMuted,
+                                ),
                               ),
                               onTap: () {
-                                _controller.text = term;
+                                _controller.text = term.value;
                                 ref.read(searchQueryProvider.notifier).state =
-                                    term;
+                                    term.value;
+                                ref
+                                    .read(
+                                      recentSearchesControllerProvider.notifier,
+                                    )
+                                    .remember(term.value);
                               },
                             ),
                           ),
@@ -106,6 +123,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       return SongListTile(
                         song: song,
                         onTap: () {
+                          _rememberCurrentQuery();
                           ref
                               .read(playerControllerProvider.notifier)
                               .playSong(song);
@@ -130,5 +148,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         ),
       ),
     );
+  }
+
+  void _rememberCurrentQuery() {
+    final query = _controller.text.trim();
+    if (query.isEmpty) {
+      return;
+    }
+
+    ref.read(recentSearchesControllerProvider.notifier).remember(query);
   }
 }
